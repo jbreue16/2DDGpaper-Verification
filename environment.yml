@@ -1,0 +1,17 @@
+name: verify
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - cadet
+  - pip
+  - pip:
+      - scipy
+      - numpy
+      - matplotlib
+      - pytest
+      - pandas
+      - h5py
+      - joblib
+      - cadet-python
+      - cadet-rdm
