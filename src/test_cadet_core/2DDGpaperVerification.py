@@ -45,8 +45,8 @@ commit_message = f"Benchmarks for 2DDG 3-zone radial inlet variance convergence"
 # To run the full extensive benchmarks, this needs to be set to false.
 
 small_test = True
-rdm_debug_mode = True
-rerun_sims = False
+rdm_debug_mode = False
+rerun_sims = True
 
 settings = [
     { # PURE COLUMN TRANSPORT CASE
