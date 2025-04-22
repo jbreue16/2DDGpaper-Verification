@@ -39,7 +39,7 @@ project_repo = ProjectRepo()
 output_path = project_repo.output_path / "test_cadet-core" / "2D_chromatography"
 
 # specify a source build cadet_path
-cadet_path = r"C:\Users\jmbr\Cadet_testBuild\CADET_PR2DmodelsDG\out\install\aRELEASE\bin\cadet-cli.exe"
+cadet_path = r"C:\Users\jmbr\software\CADET-Core\out\install\aRELEASE\bin\cadet-cli.exe"
 Cadet.cadet_path = cadet_path
 
 commit_message = f"Run 2D DG pure axial flow benchmark"
@@ -73,7 +73,7 @@ with project_repo.track_results(results_commit_message=commit_message, debug=Tru
 
         benchmark_config = {
             'cadet_config_jsons': [
-                settings_2Dchromatography.SamDiss_2DVerificationSetting(
+                settings_2Dchromatography.GRM2D_linBnd_benchmark1(
                     # film_diffusion=0.0,
                     nRadialZones=1,
                     USE_MODIFIED_NEWTON=1, axMethod=1, **kwargs)
@@ -122,7 +122,7 @@ with project_repo.track_results(results_commit_message=commit_message, debug=Tru
     
     ref_name = "/ref_1DLRMP_linBnd_1Comp_FV_Z4096.h5"
     
-    config1D = settings_2Dchromatography.SamDiss_2DVerificationSetting(
+    config1D = settings_2Dchromatography.GRM2D_linBnd_benchmark1(
         0, 4096,
         0, 0,
         0, 2,

@@ -73,7 +73,7 @@ with project_repo.track_results(results_commit_message=commit_message, debug=Tru
 
         benchmark_config = {
             'cadet_config_jsons': [
-                settings_2Dchromatography.SamDiss_2DVerificationSetting(
+                settings_2Dchromatography.GRM2D_linBnd_benchmark1(
                     # film_diffusion=0.0,
                     nRadialZones=1,
                     USE_MODIFIED_NEWTON=1, axMethod=1, **kwargs)
@@ -122,7 +122,7 @@ with project_repo.track_results(results_commit_message=commit_message, debug=Tru
     
     ref_name = "/ref_1DLRMP_linBnd_1Comp_DG_P5Z64.h5"
     
-    config1D = settings_2Dchromatography.SamDiss_2DVerificationSetting(
+    config1D = settings_2Dchromatography.GRM2D_linBnd_benchmark1(
         5, 256,
         1, 0,
         1, 1,
@@ -140,7 +140,7 @@ with project_repo.track_results(results_commit_message=commit_message, debug=Tru
             'par_diffusion' : 1.0
             # 'film_diffusion' : 0.0
         }
-    )
+        )
     
     ref_outlet = convergence.get_outlet(str(output_path)+ref_name, '000')
     
