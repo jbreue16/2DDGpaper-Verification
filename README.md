@@ -28,29 +28,3 @@ If you are a CADET-Core developer adding a new feature, you must also include an
 This ensures that your contribution meets the quality standards and helps maintain the long-term reliability and maintainability of the project.
 
 Furthermore, contributions aimed at improving or extending the evaluation functions are highly encouraged.
-# Project repo
-Your code goes in this repo.
-Please add a description here including: 
-- authors
-- project
-- things we will find interesting later
-
-
-Please update the environment.yml with your python environment requirements.
-
-
-The output repository can be found at:
-[output_repo]() (not actually set yet because no remote has been configured at this moment
-# Project repo
-Your code goes in this repo.
-Please add a description here including: 
-- authors
-- project
-- things we will find interesting later
-
-
-Please update the environment.yml with your python environment requirements.
-
-
-The output repository can be found at:
-[output_repo]() (not actually set yet because no remote has been configured at this moment
