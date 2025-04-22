@@ -36,21 +36,21 @@ import twoDimChromatography
 
 #%% User Input
 
-commit_message = f"Reduced run to verify CADET-Core v5.0.3 release"
+commit_message = f"test run for 2D DG models"
 
-rdm_debug_mode = False # Run CADET-RDM in debug mode to test if the script works
+rdm_debug_mode = 1 # Run CADET-RDM in debug mode to test if the script works
 
-small_test = True # Defines a smaller test set (less numerical refinement steps)
+small_test = 1 # Defines a smaller test set (less numerical refinement steps)
 
 n_jobs = -1 # For parallelization on the number of simulations
 
-delete_h5_files = True # delete h5 files (but keep convergence tables and plots)
+delete_h5_files = 0 # delete h5 files (but keep convergence tables and plots)
 exclude_files = None # ["file1", "file2"] # specify h5 files that should not be deleted
 
-run_chromatography_tests = True
-run_chromatography_system_tests = True
-run_crystallization_tests = True
-run_MCT_tests = True
+run_chromatography_tests = 0
+run_chromatography_system_tests = 0
+run_crystallization_tests = 0
+run_MCT_tests = 0
 run_2DChromatography_tests = True
 
 database_path = "https://jugit.fz-juelich.de/IBG-1/ModSim/cadet/cadet-database" + \
@@ -62,7 +62,7 @@ output_path = project_repo.output_path / "test_cadet-core"
 
 # The get_cadet_path function searches for the cadet-cli. If you want to use a specific source build, please define the path below
 cadet_path = convergence.get_cadet_path() # path to root folder of bin\cadet-cli 
- 
+
 
 # %% Run with CADET-RDM
 
@@ -123,7 +123,7 @@ with project_repo.track_results(results_commit_message=commit_message, debug=rdm
         
         twoDimChromatography.GRM2D_linBnd_tests(
                 n_jobs=n_jobs, database_path=None, small_test=small_test,
-                output_path=str(output_path) + "/2Dchromatography", cadet_path=cadet_path,
+                output_path=str(output_path) + "/2D_chromatography", cadet_path=cadet_path,
                 reference_data_path=str(project_repo.output_path.parent / 'data'),
                 use_CASEMA_reference=True, rerun_sims=True)
     
