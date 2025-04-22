@@ -51,7 +51,7 @@ run_chromatography_tests = True
 run_chromatography_system_tests = True
 run_crystallization_tests = True
 run_MCT_tests = True
-run_2Dmodels_tests = True
+run_2DChromatography_tests = True
 
 database_path = "https://jugit.fz-juelich.de/IBG-1/ModSim/cadet/cadet-database" + \
     "/-/raw/core_tests/cadet_config/test_cadet-core/"
@@ -119,7 +119,7 @@ with project_repo.track_results(results_commit_message=commit_message, debug=rdm
         if delete_h5_files:
             convergence.delete_h5_files(str(output_path) + "/mct", exclude_files=exclude_files)
         
-    if run_2Dmodels_tests:
+    if run_2DChromatography_tests:
         
         twoDimChromatography.GRM2D_linBnd_tests(
                 n_jobs=n_jobs, database_path=None, small_test=small_test,

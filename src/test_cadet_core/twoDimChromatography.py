@@ -16,12 +16,9 @@ import os
 import numpy as np
 import json
 import shutil
-
 import json
-import csv
     
 from cadet import Cadet
-from cadetrdm import ProjectRepo
 
 from utility import convergence
 import bench_func
@@ -393,7 +390,7 @@ def GRM2D_linBnd_tests(
             target_data['convergence']['FV']['outlet']['$L^2$ error'] = L2Error.tolist()
             target_data['convergence']['FV']['outlet']['$L^2$ EOC'] = L2EOC.tolist()
 
-            print("jojo setting no. ", idx)
+            print("EOC data for setting no. ", idx)
             print(target_data)
             with open(target_name, "w") as file:
                 # Write with pretty formatting

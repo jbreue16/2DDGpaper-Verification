@@ -192,14 +192,11 @@ def GRM2D_linBnd_benchmark1(
         tolerance=1e-12,
         plot=False, run=False,
         save_path="C:/Users/jmbr/JupyterNotebooks/",
-        cadet_path="C:/Users/jmbr/Cadet/code/out/install/MS_MKL_RELEASE/bin/cadet-cli.exe",
         file_name=None,
         export_json_config=False,
         transport_model=None,
         **kwargs
 ):
-
-    Cadet.cadet_path = cadet_path
 
     nRadPoints = (radMethod + 1) * radNElem
     nInlets = max(1, nRadialZones) if kwargs.get(
@@ -413,7 +410,6 @@ def GRM2D_linBnd_benchmark1(
     model.model.connections.NSWITCHES = 1
     model.model.connections.switch_000.SECTION = 0
     model.model.connections.switch_000.connections = connections
-    model.model.connections.connections_include_ports = 1
 
     model.solver.sections.SECTION_CONTINUITY = [0,]
     model.solver.USER_SOLUTION_TIMES = np.linspace(1, 1500, 1500) if kwargs.get('analytical_reference', False) else np.linspace(0, 1500, 1501)
