@@ -268,6 +268,15 @@ def GRM2D_linBnd_tests(
                 print(f"An error occurred: {e}")
 
         def rename_json_file(original_file, new_file):
+ 
+            # Check if the new file name already exists and delete it
+            if os.path.exists(new_file):
+                try:
+                    os.remove(new_file)
+                    # print(f"Deleted existing file: {new_file}")
+                except Exception as e:
+                    print(f"Could not delete existing file {new_file}: {e}")
+                    return
 
             # Rename the file
             try:
@@ -396,3 +405,8 @@ def GRM2D_linBnd_tests(
                 # Write with pretty formatting
                 json.dump(target_data, file, indent=4)
 
+            new_name = str(output_path) + '/convergence_portsMaxNorm_' + \
+                settings[idx]['name'] + '.json'
+                
+            rename_json_file(target_name, new_name)
+            
