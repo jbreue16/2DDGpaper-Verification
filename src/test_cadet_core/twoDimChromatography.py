@@ -46,7 +46,7 @@ def GRM2D_linBnd_tests(
     if use_CASEMA_reference:
 
         references = []
-        ref_file_names = ['CASEMA_reference/ref_2DGRM3Zone_noBnd_1Comp_radZ3.h5',
+        ref_file_names = ['CASEMA_reference/ref_2DGRM3Zone_noFilmDiff_1Comp_radZ3.h5',
                           'CASEMA_reference/ref_2DGRM3Zone_dynLin_1Comp_radZ3.h5',
                           'CASEMA_reference/ref_2DGRMsd3Zone_dynLin_1Comp_radZ3.h5',
                           'CASEMA_reference/ref_2DGRM3Zone_reqLin_1Comp_radZ3.h5',
@@ -73,7 +73,7 @@ def GRM2D_linBnd_tests(
                 # If set to true, solution time 0.0 is ignored since its not computed by the analytical solution (CADET-Semi-Analytic)
                 'analytical_reference': use_CASEMA_reference,
                 'nRadialZones': 3,
-                'name': '2DGRM3Zone_noBnd_1Comp',
+                'name': '2DGRM3Zone_noFilmDiff_1Comp',
                 'adsorption_model': 'NONE',
                 'par_surfdiffusion': 0.0,
                 'reference': references[0]
