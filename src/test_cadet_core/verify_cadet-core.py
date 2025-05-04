@@ -33,6 +33,7 @@ import crystallization_partII
 import MCT
 import chrom_systems
 import twoDimChromatography
+import twoDimChromatographyDG
 
 #%% User Input
 
@@ -42,7 +43,7 @@ rdm_debug_mode = 1 # Run CADET-RDM in debug mode to test if the script works
 
 small_test = 1 # Defines a smaller test set (less numerical refinement steps)
 
-n_jobs = -1 # For parallelization on the number of simulations
+n_jobs = 1 # For parallelization on the number of simulations
 
 delete_h5_files = 0 # delete h5 files (but keep convergence tables and plots)
 exclude_files = None # ["file1", "file2"] # specify h5 files that should not be deleted
@@ -62,6 +63,7 @@ output_path = project_repo.output_path / "test_cadet-core"
 
 # The get_cadet_path function searches for the cadet-cli. If you want to use a specific source build, please define the path below
 cadet_path = convergence.get_cadet_path() # path to root folder of bin\cadet-cli 
+#cadet_path = r"C:\Users\jmbr\Desktop\CADET_compiled\master4_crysPartII_d0888cb\aRELEASE\bin\cadet-cli.exe"
 
 
 # %% Run with CADET-RDM
@@ -120,13 +122,13 @@ with project_repo.track_results(results_commit_message=commit_message, debug=rdm
             convergence.delete_h5_files(str(output_path) + "/mct", exclude_files=exclude_files)
         
     if run_2DChromatography_tests:
-        
+
         twoDimChromatography.GRM2D_linBnd_tests(
                 n_jobs=n_jobs, database_path=None, small_test=small_test,
                 output_path=str(output_path) + "/2D_chromatography", cadet_path=cadet_path,
                 reference_data_path=str(project_repo.output_path.parent / 'data'),
                 use_CASEMA_reference=True, rerun_sims=True)
-    
+
         if delete_h5_files:
             convergence.delete_h5_files(str(output_path) + "/2Dchromatography", exclude_files=exclude_files)
         

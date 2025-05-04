@@ -34,19 +34,40 @@ import settings_2Dchromatography
 def GRM2D_linBnd_tests(
         n_jobs, database_path, small_test,
         output_path, cadet_path, reference_data_path=None,
-        use_CASEMA_reference=True, rerun_sims=True):
+        use_CASEMA_reference=True, zonal_ref_file_names=None,
+        rerun_sims=True):
 
     os.makedirs(output_path, exist_ok=True)
 
-    nRadialZones = 3
-    n_settings = 6
+    zonal_reference = use_CASEMA_reference or zonal_ref_file_names is not None
 
-    references = [None] * n_settings
+    nRadialZones = 3
+    n_settings = 1
+    numRef_kwargs = {} # only filled when numerical reference is being used
+        
+    if zonal_ref_file_names is None:
+        
+        references = [None] * n_settings
+        
+    elif use_CASEMA_reference:
+        raise ValueError("If zonal_ref_file_names are provided dynamically, you cannot specify the use of CASEMA references (which are fixed)")
+    
+    else:
+        
+        references = []
+        
+        for idx in range(n_settings):
+            # note that we consider radial zone 0
+            references.extend(
+                [convergence.get_solution(
+                    reference_data_path + '/' + zonal_ref_file_names[idx], unit='unit_004', which='outlet'
+                    )]
+                )
 
     if use_CASEMA_reference:
 
         references = []
-        ref_file_names = ['CASEMA_reference/ref_2DGRM3Zone_noFilmDiff_1Comp_radZ3.h5',
+        zonal_ref_file_names = ['CASEMA_reference/ref_2DGRM3Zone_noFilmDiff_1Comp_radZ3.h5',
                           'CASEMA_reference/ref_2DGRM3Zone_dynLin_1Comp_radZ3.h5',
                           'CASEMA_reference/ref_2DGRMsd3Zone_dynLin_1Comp_radZ3.h5',
                           'CASEMA_reference/ref_2DGRM3Zone_reqLin_1Comp_radZ3.h5',
@@ -61,7 +82,7 @@ def GRM2D_linBnd_tests(
             # note that we consider radial zone 0
             references.extend(
                 [convergence.get_solution(
-                    reference_data_path + '/' + ref_file_names[idx], unit='unit_000', which='outlet_port_' + str(0).zfill(3)
+                    reference_data_path + '/' + zonal_ref_file_names[idx], unit='unit_004', which='outlet'
                 )]
             )
 
@@ -85,7 +106,7 @@ def GRM2D_linBnd_tests(
                 'adsorption_model': 'LINEAR',
                 'adsorption.is_kinetic': 1,
                 'par_surfdiffusion': 0.0,
-                'reference': references[1]
+                'reference': references[min(len(references) - 1, 1)]
             },
             {  # 1parType, dynamic binding, with surface diffusion
                 'analytical_reference': use_CASEMA_reference,
@@ -94,7 +115,7 @@ def GRM2D_linBnd_tests(
                 'adsorption_model': 'LINEAR',
                 'adsorption.is_kinetic': 1,
                 'par_surfdiffusion': 1e-11,
-                'reference': references[2]
+                'reference': references[min(len(references) - 1, 2)]
             },
             {  # 1parType, req binding, no surface diffusion
                 'analytical_reference': use_CASEMA_reference,
@@ -105,7 +126,7 @@ def GRM2D_linBnd_tests(
                 'par_surfdiffusion': 0.0,
                 'init_cp': [0.0],
                 'init_cs': [0.0],
-                'reference': references[3]
+                'reference': references[min(len(references) - 1, 3)]
             },
             {  # 1parType, req binding, with surface diffusion
                 'analytical_reference': use_CASEMA_reference,
@@ -116,7 +137,7 @@ def GRM2D_linBnd_tests(
                 'par_surfdiffusion': 1e-11,
                 'init_cp': [0.0],
                 'init_cs': [0.0],
-                'reference': references[4]
+                'reference': references[min(len(references) - 1, 4)]
             },
             {  # 4parType:
                 'analytical_reference': use_CASEMA_reference,
@@ -138,9 +159,9 @@ def GRM2D_linBnd_tests(
                 'adsorption.is_kinetic': [0, 1] if small_test else [0, 1, 0, 0],
                 'adsorption.lin_ka': [35.5, 4.5] if small_test else [35.5, 4.5, 0, 0.25],
                 'adsorption.lin_kd': [1.0, 0.15] if small_test else [1.0, 0.15, 0, 1.0],
-                'reference': references[5]
+                'reference': references[min(len(references) - 1, 5)]
             }
-        ]
+        ][0:n_settings]
 
     # %% Define benchmarks
 
@@ -163,12 +184,13 @@ def GRM2D_linBnd_tests(
 
     def GRM2D_FV_Benchmark(small_test=False, **kwargs):
 
-        nDisc = 4 if small_test else 5
+        nDisc = 4 if small_test else 6
         nRadialZones = kwargs.get('nRadialZones', 3)
 
         benchmark_config = {
             'cadet_config_jsons': [
-                settings_2Dchromatography.GRM2D_linBnd_benchmark1(
+                settings_2Dchromatography.model2Dflow_linBnd_benchmark1(
+                    transport_model='GENERAL_RATE_MODEL_2D',
                     radNElem=nRadialZones,
                     rad_inlet_profile=None,
                     USE_MODIFIED_NEWTON=0, axMethod=0, **kwargs)
@@ -182,13 +204,11 @@ def GRM2D_linBnd_tests(
             'refinement_ID': [
                 '000'
             ],
-            'unit_IDs': [  # note that we consider radial zone 0
-                str(nRadialZones + 1 +
-                    0).zfill(3) if kwargs.get('analytical_reference', 0) else '000'
+            'unit_IDs': [  # note that we consider the outlet unit for radial zone 0
+                str(nRadialZones + 1).zfill(3)
             ],
             'which': [
-                'outlet' if kwargs.get(
-                    'analytical_reference', 0) else 'radial_outlet'  # outlet_port_000
+                'outlet'
             ],
             'idas_abstol': [
                 [1e-10]
@@ -251,11 +271,13 @@ def GRM2D_linBnd_tests(
         rad_inlet_profile=None,
         rerun_sims=rerun_sims,
         refinement_IDs=refinement_IDs,
-        analytical_reference=use_CASEMA_reference
+        zonal_reference=zonal_reference,
+        **numRef_kwargs
     )
 
-    # For the analytical solution, we compute the discrete norm of the errors from each zone
-    if use_CASEMA_reference:
+    # For a given reference solution, we compute the discrete norm of the errors from each zone 
+    # This is required anyways for CASEMA reference solutions since here, the solution provides the radial integral for each zone
+    if zonal_reference:
 
         def copy_json_file(source_file, destination_file):
             try:
@@ -305,7 +327,7 @@ def GRM2D_linBnd_tests(
                 # get the references at the other ports
                 references.extend(
                     [convergence.get_solution(
-                        reference_data_path + '/' + ref_file_names[idx], unit='unit_000', which='outlet_port_' + str(target_zone).zfill(3)
+                        reference_data_path + '/' + zonal_ref_file_names[idx], unit='unit_' + str(4 + target_zone).zfill(3), which='outlet'
                     )]
                 )
 
@@ -314,8 +336,7 @@ def GRM2D_linBnd_tests(
 
             # calculate results for next port
 
-            ref_files = [[references[0]], [references[1]], [references[2]],
-                         [references[3]], [references[4]], [references[5]]]
+            ref_files = [[references[i]] for i in range(n_settings)]
 
             bench_func.run_convergence_analysis(
                 database_path=database_path, output_path=output_path,
@@ -334,7 +355,8 @@ def GRM2D_linBnd_tests(
                 rad_inlet_profile=None,
                 rerun_sims=False,
                 refinement_IDs=refinement_IDs,
-                analytical_reference=use_CASEMA_reference
+                zonal_reference=zonal_reference,
+                **numRef_kwargs
             )
 
             # save new results under new name for corresponding port

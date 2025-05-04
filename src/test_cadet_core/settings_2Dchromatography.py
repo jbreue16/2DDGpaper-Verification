@@ -98,8 +98,20 @@ def generate_connections_matrix(rad_method, rad_cells,
     
     Parameters
     ----------
+    rad_method : int
+        radial method / polynomial degree
+    rad_cells : int
+        radial number of cells
+    velocity : float
+        column velocity (constant)
     porosity : float
         column porosity (constant)
+    col_radius : float
+        column radius (constant)
+    add_inlet_per_port : int | bool
+        specifies how many radial zones are used either by number or by true to specify one per port
+    add_outlet : bool
+        specifies whetehr or not an outlet is connected per radial zone
     
     Returns
     -------
@@ -148,6 +160,7 @@ def generate_connections_matrix(rad_method, rad_cells,
     # create flow rates for each zone
     flowRates = []
     columnIdx = 0  # always needs to be the first unit
+    
     for rad in range(nRadPoints):
         flowRates.append(subcellCrossSectionAreas[rad] * porosity * velocity)
     # create connections matrix
@@ -159,7 +172,7 @@ def generate_connections_matrix(rad_method, rad_cells,
 
         if not rad_cells % nRadialZones == 0:
             raise Exception(
-                f"Number of radial zones {nRadialZones} is not a multiple of rad_cells {rad_cells}")
+                f"Number of rad_cells {rad_cells} is not a multiple of radial zones {nRadialZones}")
 
         for rad in range(nRadPoints):
             zone = int(rad / (nRadPoints / nRadialZones))
@@ -174,6 +187,7 @@ def generate_connections_matrix(rad_method, rad_cells,
             if add_outlet:
                 connections += [columnIdx, nRadPoints + 1 + rad,
                                 rad, 0, -1, -1, flowRates[rad]]
+                
     return connections, rad_coords
 
 # =============================================================================
@@ -184,298 +198,32 @@ def generate_connections_matrix(rad_method, rad_cells,
 # %% Verification settings
 
 
-def LRMP2D_linBnd_benchmark1(
-        axMethod=0, axNElem=8,
-        radMethod=0, radNElem=3,
-        nRadialZones=1,  # discontinuous radial inlet zones (equidistant)
-        tolerance=1e-12,
-        plot=False, run=False,
-        save_path="C:/Users/jmbr/JupyterNotebooks/",
-        file_name=None,
-        export_json_config=False,
-        model1D=False, # for 1D comparison
-        **kwargs
-):
-
-    nRadPoints = (radMethod + 1) * radNElem
-    nInlets = max(1, nRadialZones) if kwargs.get(
-        'rad_inlet_profile', None) is None else nRadPoints
-    nOutlets = kwargs.get('analytical_reference', 0)
-
-    column = Dict()
-    column.UNIT_TYPE = 'LUMPED_RATE_MODEL_WITH_PORES_2D' if not model1D else 'LUMPED_RATE_MODEL_WITH_PORES'
-
-    nComp = 1
-    column.NCOMP = nComp
-
-    column.COL_LENGTH = 0.014
-    column.COL_RADIUS = 0.0035
-    column.CROSS_SECTION_AREA = np.pi * column.COL_RADIUS**2
-    column.PAR_RADIUS = kwargs.get('par_radius', 45E-6)
-
-    column.NPARTYPE = kwargs.get('npartype', 1)
-    # column.PAR_TYPE_VOLFRAC_MULTIPLEX = 0
-    column.COL_POROSITY = 0.37
-    column.PAR_POROSITY = kwargs.get('par_porosity', 0.75)
-    column.PAR_TYPE_VOLFRAC = kwargs.get('par_type_volfrac', 1.0)
-
-    column.VELOCITY = 3.45 / (100.0 * 60.0)  # 3.45 cm/min
-    column.COL_DISPERSION = 5.75e-8
-    if not model1D:
-        column.COL_DISPERSION_RADIAL = kwargs.get('col_dispersion_radial', 5e-8)
-    column.FILM_DIFFUSION = kwargs.get('film_diffusion', 6.9e-6)
-
-    # binding parameters
-    column.nbound = kwargs.get('nbound', 1)
-    column.adsorption_model = kwargs.get('adsorption_model', 'LINEAR')
-    if column.NPARTYPE > 1:
-        for parType in range(column.NPARTYPE):
-            groupName = 'adsorption_' + str(parType).zfill(3)
-            column[groupName].is_kinetic = kwargs['adsorption.is_kinetic'][parType]
-            column[groupName].lin_ka = kwargs['adsorption.lin_ka'][parType]
-            column[groupName].lin_kd = kwargs['adsorption.lin_kd'][parType]
-            
-    else:
-        column.adsorption.is_kinetic = kwargs.get('adsorption.is_kinetic', 0)
-        column.adsorption.lin_ka = kwargs.get('adsorption.lin_ka', 35.5)
-        column.adsorption.lin_kd = kwargs.get('adsorption.lin_kd', 1.0)
-
-    if 'INIT_C' in kwargs:
-
-        rad_coords = np.zeros(nRadPoints)
-        ax_coords = np.zeros((axMethod+1)*axNElem)
-        ax_delta = column.COL_LENGTH / axNElem
-        rad_delta = column.COL_RADIUS / radNElem
-
-        if axMethod > 0:
-            ax_nodes, _ = lgl_nodes_weights(axMethod)
-            rad_nodes, _ = lgl_nodes_weights(radMethod)
-
-            for idx in range(axNElem):
-                ax_coords[idx * (axMethod+1): (idx + 1) * (axMethod+1)
-                          ] = convergence.map_xi_to_z(ax_nodes, idx, ax_delta)
-            for idx in range(radNElem):
-                rad_coords[idx * (radMethod+1): (idx + 1) * (radMethod+1)
-                           ] = convergence.map_xi_to_z(rad_nodes, idx, rad_delta)
-        else:
-            ax_coords = np.array([idx * ax_delta for idx in range(axNElem)])
-            rad_coords = np.array([rad_delta / 2.0 + idx * rad_delta for idx in range(radNElem)])
-
-        column.init_c = kwargs['INIT_C'](ax_coords, rad_coords)
-    else:
-        column.init_c = [0] * nComp
-    column.init_cp = kwargs.get('init_cp', [0] * nComp)
-    column.init_q = kwargs.get('init_cs', [0] * nComp)
-
-    if axMethod > 0:
-        column.discretization.SPATIAL_METHOD = "DG"
-        if not model1D:
-            column.discretization.AX_POLYDEG = axMethod
-            column.discretization.AX_NELEM = axNElem
-            column.discretization.RAD_POLYDEG = radMethod
-            column.discretization.RAD_NELEM = radNElem
-        else:
-            column.discretization.POLYDEG = axMethod
-            column.discretization.NELEM = axNElem
-            column.discretization.EXACT_INTEGRATION = 1
-    else:
-        column.discretization.SPATIAL_METHOD = "FV"
-        column.discretization.NCOL = axNElem
-        if not model1D:
-            column.discretization.NRAD = radNElem
-        column.discretization.SCHUR_SAFETY = 1.0e-8
-        column.discretization.weno.BOUNDARY_MODEL = 0
-        column.discretization.weno.WENO_EPS = 1e-10
-        column.discretization.weno.WENO_ORDER = 3
-        column.discretization.GS_TYPE = 1
-        column.discretization.MAX_KRYLOV = 0
-        column.discretization.MAX_RESTARTS = 10
-
-    column.discretization.USE_ANALYTIC_JACOBIAN = True
-    column.discretization.RADIAL_DISC_TYPE = 'EQUIDISTANT'
-    column.PORTS = nRadPoints
-
-    inletUnit = Dict()
-
-    inletUnit.INLET_TYPE = 'PIECEWISE_CUBIC_POLY'
-    inletUnit.UNIT_TYPE = 'INLET'
-    inletUnit.NCOMP = nComp
-    inletUnit.sec_000.CONST_COEFF = [kwargs.get('INLET_CONST', 1.0)] * nComp
-    inletUnit.sec_001.CONST_COEFF = [0.0] * nComp
-    inletUnit.ports = 1
-    
-    # define cadet model using the unit-dicts above
-    model = Dict()
-
-    model.model.nunits = 1 + nInlets + nOutlets
-
-    # Store solution
-    model['return'].split_components_data = 0
-    model['return'].split_ports_data = kwargs.get('SPLIT_PORTS_DATA', 1)
-    model['return']['unit_000'].WRITE_SOLUTION_INLET = kwargs.get(
-        'WRITE_SOLUTION_INLET', 0)
-    model['return']['unit_000'].WRITE_SOLUTION_FLUX = kwargs.get(
-        'WRITE_SOLUTION_FLUX', 0)
-    model['return']['unit_000'].WRITE_SOLUTION_OUTLET = kwargs.get(
-        'WRITE_SOLUTION_OUTLET', 1)
-    model['return']['unit_000'].WRITE_SOLUTION_BULK = kwargs.get(
-        'WRITE_SOLUTION_BULK', 0)
-    model['return']['unit_000'].WRITE_SOLUTION_PARTICLE = kwargs.get(
-        'WRITE_SOLUTION_PARTICLE', 0)
-    model['return']['unit_000'].WRITE_SOLUTION_SOLID = kwargs.get(
-        'WRITE_SOLUTION_SOLID', 0)
-    model['return']['unit_000'].WRITE_COORDINATES = 1
-    model['return']['unit_000'].WRITE_SENS_OUTLET = kwargs.get(
-        'WRITE_SENS_OUTLET', 0)
-
-    # Tolerances for the time integrator
-    model.solver.time_integrator.USE_MODIFIED_NEWTON = kwargs.get(
-        'USE_MODIFIED_NEWTON', 0)
-    model.solver.time_integrator.ABSTOL = 1e-6
-    model.solver.time_integrator.ALGTOL = 1e-10
-    model.solver.time_integrator.RELTOL = 1e-6
-    model.solver.time_integrator.INIT_STEP_SIZE = 1e-6
-    model.solver.time_integrator.MAX_STEPS = 1000000
-
-    # Solver settings
-    model.model.solver.GS_TYPE = 1
-    model.model.solver.MAX_KRYLOV = 0
-    model.model.solver.MAX_RESTARTS = 10
-    model.model.solver.SCHUR_SAFETY = 1e-8
-
-    # Run the simulation on single thread
-    model.solver.NTHREADS = 1
-    model.solver.CONSISTENT_INIT_MODE = 3
-    
-    # Sections
-    model.solver.sections.NSEC = 2
-    model.solver.sections.SECTION_TIMES = [0.0, 10.0, 1500.0]
-
-    # get connections matrix
-    if re.search("2D", column.UNIT_TYPE):
-        connections, rad_coords = generate_connections_matrix(
-            rad_method=radMethod, rad_cells=radNElem,
-            velocity=column.VELOCITY, porosity=column.COL_POROSITY, col_radius=column.COL_RADIUS,
-            add_inlet_per_port=nInlets, add_outlet=int(kwargs.get('analytical_reference', 0))
-        )
-
-    else:
-        Q = np.pi * column.COL_RADIUS**2 * column.VELOCITY
-        connections = [1, 0, -1, -1, Q]
-        rad_coords = [column.COL_RADIUS / 2.0]
-
-    outletUnit = Dict()
-    outletUnit.UNIT_TYPE = 'OUTLET'
-    outletUnit.NCOMP = nComp
-            
-    # Set units
-    model.model['unit_000'] = column
-    model.model['unit_001'] = copy.deepcopy(inletUnit)
-
-    if kwargs.get('rad_inlet_profile', None) is None:
-        for rad in range(max(1, nRadialZones)):
-
-            model.model['unit_' + str(rad + 1).zfill(3)
-                        ] = copy.deepcopy(inletUnit)
-
-            model.model['unit_' + str(rad + 1).zfill(
-                3)].sec_000.CONST_COEFF = float(rad + 1) if nRadialZones > 0 else 0.0
-
-            model.model['unit_' + str(nRadialZones + 1 + rad).zfill(3)] = copy.deepcopy(outletUnit)
-            model['return']['unit_' + str(nRadialZones + 1 + rad).zfill(3)] = model['return']['unit_000']
-
-    else:
-        for rad in range(nRadPoints):
-
-            model.model['unit_' + str(rad + 1).zfill(3)
-                        ] = copy.deepcopy(inletUnit)
-
-            model.model['unit_' + str(rad + 1).zfill(
-                3)].sec_000.CONST_COEFF = [kwargs['rad_inlet_profile'](rad_coords[rad], column.COL_RADIUS)] * nComp
-
-            model.model['unit_' + str(nRadPoints + 1 + rad).zfill(3)] = copy.deepcopy(outletUnit)
-            model['return']['unit_' + str(nRadPoints + 1 + rad).zfill(3)] = model['return']['unit_000']
-
-    model.model.connections.NSWITCHES = 1
-    model.model.connections.switch_000.SECTION = 0
-    model.model.connections.switch_000.connections = connections
-
-    model.solver.sections.SECTION_CONTINUITY = [0,]
-    model.solver.USER_SOLUTION_TIMES = np.linspace(1, 1500, 1500) if kwargs.get('analytical_reference', False) else np.linspace(0, 1500, 1501)
-
-    if not run:
-        return {'input': model}
-    else:
-        cadet_model = Cadet()
-        cadet_model.root.input = model
-
-        if column.discretization.SPATIAL_METHOD == "FV":
-            cadet_model.filename = save_path + \
-                file_name if file_name is not None else save_path + "FV_grm2d_debug.h5"
-        else:
-            cadet_model.filename = save_path + \
-                file_name if file_name is not None else save_path + "lrmp2d_debug.h5"
-        cadet_model.save()
-
-        data = cadet_model.run()
-        if data.return_code == 0:
-            print(cadet_model.filename + " simulation completed successfully")
-            cadet_model.load()
-        else:
-            print(data)
-            raise Exception(cadet_model.filename + " simulation failed")
-
-        if plot:
-
-            plt.figure()
-            zeitpunkt = int(plot)
-            time = cadet_model.root.output.solution.solution_times
-            ax_coords = cadet_model.root.output.coordinates['unit_000'].axial_coordinates
-            c = cadet_model.root.output.solution['unit_000'].solution_bulk
-
-            if re.search("2D", column.UNIT_TYPE):
-                for rad in range(nRadPoints):
-                    plt.plot(ax_coords, c[zeitpunkt, :, rad, 0],
-                             linestyle='dashed', label='c' + str(rad))
-            else:
-                plt.plot(ax_coords, c[zeitpunkt, :, 0],
-                         linestyle='dashed', label='c' + str(rad))
-
-            if nRadPoints <= 12:
-                plt.legend()
-            plt.title(f'Column bulk at t = {zeitpunkt}')
-            plt.xlabel('$time~/~s$')
-            plt.ylabel(r'$concentration~/~mol \cdot L^{-1} $')
-            plt.show()
-
-        return model
-
-
-def GRM2D_linBnd_benchmark1(
+def model2Dflow_linBnd_benchmark1(
         axMethod=0, axNElem=8,
         radMethod=0, radNElem=3,
         parMethod=0, parNElem=2,
-        nRadialZones=1,  # discontinuous radial inlet zones (equidistant)
+        nRadialZones=1,  # discontinuous radial zones (equidistant)
         tolerance=1e-12,
         plot=False, run=False,
         save_path="C:/Users/jmbr/JupyterNotebooks/",
         file_name=None,
         export_json_config=False,
-        transport_model=None,
+        transport_model='GENERAL_RATE_MODEL_2D',
         **kwargs
 ):
 
     nRadPoints = (radMethod + 1) * radNElem
-    nInlets = max(1, nRadialZones) if kwargs.get(
-        'rad_inlet_profile', None) is None else nRadPoints
-    nOutlets = kwargs.get('analytical_reference', 0)
+    nInlets = nRadialZones if kwargs.get('rad_inlet_profile', None) is None else nRadPoints
+    nOutlets = nRadialZones
 
     column = Dict()
 
-    if transport_model is not None:
-        column.UNIT_TYPE = transport_model
-    else:
-        column.UNIT_TYPE = 'LUMPED_RATE_MODEL_WITH_PORES_2D' if axMethod > 0 else 'GENERAL_RATE_MODEL_2D'
+    column.UNIT_TYPE = transport_model
+    if column.UNIT_TYPE not in ['GENERAL_RATE_MODEL_2D', 'LUMPED_RATE_MODEL_WITH_PORES_2D']:
+        raise Exception(f"Invalid transport_model {transport_model}")
+    
+    par_model = "1D" if column.UNIT_TYPE == 'GENERAL_RATE_MODEL_2D' else "0D"
+    
     nComp = 1
     column.NCOMP = nComp
 
@@ -494,8 +242,9 @@ def GRM2D_linBnd_benchmark1(
     column.COL_DISPERSION = 5.75e-8
     column.COL_DISPERSION_RADIAL = kwargs.get('col_dispersion_radial', 5e-8)
     column.FILM_DIFFUSION = kwargs.get('film_diffusion', 6.9e-6)
-    column.PAR_DIFFUSION = kwargs.get('par_diffusion', 6.07e-11)
-    column.PAR_SURFDIFFUSION = kwargs.get('par_surfdiffusion', 0.0)
+    if par_model == "1D":
+        column.PAR_DIFFUSION = kwargs.get('par_diffusion', 6.07e-11)
+        column.PAR_SURFDIFFUSION = kwargs.get('par_surfdiffusion', 0.0)
 
     # binding parameters
     column.nbound = kwargs.get('nbound', 1)
@@ -543,21 +292,17 @@ def GRM2D_linBnd_benchmark1(
     column.discretization.PAR_DISC_TYPE = ['EQUIDISTANT_PAR']
     if axMethod > 0:
         column.discretization.SPATIAL_METHOD = "DG"
-        if re.search("2D", column.UNIT_TYPE):
-            column.discretization.AX_POLYDEG = axMethod
-            column.discretization.AX_NELEM = axNElem
-            column.discretization.RAD_POLYDEG = radMethod
-            column.discretization.RAD_NELEM = radNElem
-        else:
-            column.discretization.POLYDEG = axMethod
-            column.discretization.NELEM = axNElem
-            column.discretization.EXACT_INTEGRATION = 1
-        column.discretization.PAR_POLYDEG = parMethod
-        column.discretization.PAR_NELEM = parNElem
+        column.discretization.AX_POLYDEG = axMethod
+        column.discretization.AX_NELEM = axNElem
+        column.discretization.RAD_POLYDEG = radMethod
+        column.discretization.RAD_NELEM = radNElem
+        if par_model == "1D":
+            column.discretization.PAR_POLYDEG = parMethod
+            column.discretization.PAR_NELEM = parNElem
     else:
-        column.discretization.NPAR = parNElem
-        column.discretization.PAR_DISC_TYPE = ['EQUIDISTANT_PAR']
-
+        if par_model == "1D":
+            column.discretization.NPAR = parNElem
+            column.discretization.PAR_DISC_TYPE = ['EQUIDISTANT_PAR']
         column.discretization.SPATIAL_METHOD = "FV"
         column.discretization.NCOL = axNElem
         column.discretization.NRAD = radNElem
@@ -634,7 +379,7 @@ def GRM2D_linBnd_benchmark1(
         connections, rad_coords = generate_connections_matrix(
             rad_method=radMethod, rad_cells=radNElem,
             velocity=column.VELOCITY, porosity=column.COL_POROSITY, col_radius=column.COL_RADIUS,
-            add_inlet_per_port=nInlets, add_outlet=int(kwargs.get('analytical_reference', 0))
+            add_inlet_per_port=nInlets, add_outlet=True
         )
 
     else:
@@ -679,7 +424,7 @@ def GRM2D_linBnd_benchmark1(
     model.model.connections.switch_000.connections = connections
 
     model.solver.sections.SECTION_CONTINUITY = [0,]
-    model.solver.USER_SOLUTION_TIMES = np.linspace(1, 1500, 1500) if kwargs.get('analytical_reference', False) else np.linspace(0, 1500, 1501)
+    model.solver.USER_SOLUTION_TIMES = np.linspace(1, 1500, 1500)
 
     if not run:
         return {'input': model}

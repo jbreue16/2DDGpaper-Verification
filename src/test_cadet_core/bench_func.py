@@ -249,11 +249,11 @@ def create_object_from_config(
                 if kwargs.get('rad_inlet_profile', None) is None:
                     # if we have more than 1 inlet, there are radial zones defined
                     n_units = config_data['input']['model']['nunits']
-                    nInlets = n_units - 2 if kwargs.get('analytical_reference', 0) else n_units - 1
+                    nInlets = int((n_units - 1) / 2)
                     add_inlet_per_port = nInlets if nInlets > 2 else False
                 else:
                     add_inlet_per_port = kwargs.get('rad_inlet_profile')
-                    nOutlets = 1 if kwargs.get('analytical_reference', 0) else 0
+                    nOutlets = 1 if kwargs.get('zonal_reference', 0) else 0
                     n_units = (rad_method + 1 ) * rad_cells + 1 + nOutlets
                 config_data['input']['model'].nunits = n_units
                 
@@ -265,7 +265,7 @@ def create_object_from_config(
                                                            tmpID].COL_POROSITY,
                     col_radius=config_data['input']['model']['unit_' +
                                                              tmpID].COL_RADIUS,
-                    add_inlet_per_port=add_inlet_per_port, add_outlet=int(kwargs.get('analytical_reference', 0))
+                    add_inlet_per_port=add_inlet_per_port, add_outlet=int(kwargs.get('zonal_reference', 0))
                 )
 
                 if add_inlet_per_port is True:

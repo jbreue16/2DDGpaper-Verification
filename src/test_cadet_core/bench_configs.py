@@ -724,11 +724,11 @@ def GRM2D_FV_benchmark(small_test=False, **kwargs):
         'refinement_ID': [
             '000'
         ],
-        'unit_IDs': [ # note that we consider radial zone 0
-            str(nRadialZones + 1 + 0).zfill(3) if kwargs.get('analytical_reference', 0) else '000'
+        'unit_IDs': [
+            '000'
         ],
         'which': [
-            'outlet' if kwargs.get('analytical_reference', 0) else 'radial_outlet' # outlet_port_000
+            'outlet'
         ],
         'idas_abstol': [
             [1e-10]

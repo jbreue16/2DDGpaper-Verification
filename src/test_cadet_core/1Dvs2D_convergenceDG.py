@@ -39,7 +39,7 @@ project_repo = ProjectRepo()
 output_path = project_repo.output_path / "test_cadet-core" / "2D_chromatography"
 
 # specify a source build cadet_path
-cadet_path = r"C:\Users\jmbr\software\CADET-Core\out\install\aRELEASE\bin\cadet-cli.exe"
+cadet_path = convergence.get_cadet_path() # r"C:\Users\jmbr\OneDrive\Desktop\CADET_compiled\PR2DDG_fixCompressionCommit_fa26d46\aRELEASE\bin\cadet-cli.exe"
 Cadet.cadet_path = cadet_path
 
 commit_message = f"Run 2D DG pure axial flow benchmark"
@@ -76,7 +76,7 @@ with project_repo.track_results(results_commit_message=commit_message, debug=Tru
                 settings_2Dchromatography.GRM2D_linBnd_benchmark1(
                     # film_diffusion=0.0,
                     nRadialZones=1,
-                    USE_MODIFIED_NEWTON=1, axMethod=1, **kwargs)
+                    USE_MODIFIED_NEWTON=1, axMethod=0, **kwargs)
             ],
             'include_sens': [
                 False
@@ -94,13 +94,13 @@ with project_repo.track_results(results_commit_message=commit_message, debug=Tru
                 [1e-10]
             ],
             'ax_methods': [
-                [1]
+                [0]
             ],
             'ax_discs': [
                 [bench_func.disc_list(4, 6 if not small_test else 5)]
             ],
             'rad_methods': [
-                [2]
+                [0]
             ],
             'rad_discs': [
                 [[1] * 6] if not small_test else [[1] * 5]
