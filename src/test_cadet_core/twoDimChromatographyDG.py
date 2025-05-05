@@ -62,11 +62,14 @@ def LRMP2D_linBnd_tests(
                         )]
                     )
             elif comparison_mode==2:
-                references.extend(
-                    [convergence.get_solution(
-                        reference_data_path + '/' + ref_file_names[idx], unit='unit_000', which='outlet'
-                        )]
-                    )
+                
+                references.extend([ref_file_names[idx]])
+                    
+                # references.extend(
+                #     [convergence.get_solution(
+                #         reference_data_path + '/' + ref_file_names[idx], unit='unit_000', which='outlet'
+                #         )]
+                #     )
 
     if comparison_mode==0:
 
@@ -83,7 +86,7 @@ def LRMP2D_linBnd_tests(
                 )]
             )
 
-    def get_settings():
+    def get_settings(comparison_mode, reference_data_path):
         return [
             {  # PURE COLUMN TRANSPORT CASE
                 'film_diffusion': 0.0,
@@ -93,13 +96,13 @@ def LRMP2D_linBnd_tests(
                 'name': '2DLRMP3Zone_noFilmDiff_1Comp',
                 'adsorption_model': 'NONE',
                 'par_surfdiffusion': 0.0,
-                'reference': references[0]
+                'reference': None if references[0] is None else reference_data_path + '/' + references[0]
             }
         ][0:n_settings]
 
     # %% Define benchmarks
 
-    settings = get_settings()
+    settings = get_settings(comparison_mode, reference_data_path)
 
     cadet_configs = []
     config_names = []
@@ -195,7 +198,6 @@ def LRMP2D_linBnd_tests(
         rad_inlet_profile=None,
         rerun_sims=rerun_sims,
         refinement_IDs=refinement_IDs,
-        zonal_reference=zonal_reference,
         **numRef_kwargs
     )
 
@@ -278,7 +280,6 @@ def LRMP2D_linBnd_tests(
                 rad_inlet_profile=None,
                 rerun_sims=False,
                 refinement_IDs=refinement_IDs,
-                zonal_reference=zonal_reference,
                 **numRef_kwargs
             )
 
