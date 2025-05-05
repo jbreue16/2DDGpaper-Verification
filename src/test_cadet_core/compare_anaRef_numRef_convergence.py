@@ -49,7 +49,7 @@ output_path = project_repo.output_path / "test_cadet-core"
 with project_repo.track_results(results_commit_message=commit_message, debug=rdm_debug_mode):
 
     rerun_sims = 1
-    small_test = 1 # Defines a smaller test set (less numerical refinement steps)
+    small_test = 0 # Defines a smaller test set (less numerical refinement steps)
     n_jobs = -1 # For parallelization on the number of simulations
     cadet_path = r"C:\Users\jmbr\Desktop\CADET_compiled\master4_crysPartII_d0888cb\aRELEASE\bin\cadet-cli.exe"
     Cadet.cadet_path = cadet_path # convergence.get_cadet_path()
