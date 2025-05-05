@@ -64,12 +64,6 @@ def LRMP2D_linBnd_tests(
             elif comparison_mode==2:
                 
                 references.extend([ref_file_names[idx]])
-                    
-                # references.extend(
-                #     [convergence.get_solution(
-                #         reference_data_path + '/' + ref_file_names[idx], unit='unit_000', which='outlet'
-                #         )]
-                #     )
 
     if comparison_mode==0:
 

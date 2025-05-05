@@ -34,55 +34,60 @@ import settings_2Dchromatography
 def GRM2D_linBnd_tests(
         n_jobs, database_path, small_test,
         output_path, cadet_path, reference_data_path=None,
-        use_CASEMA_reference=True, zonal_ref_file_names=None,
+        comparison_mode=0, ref_file_names=None,
         rerun_sims=True):
-
+    
+    if comparison_mode not in [0, 1, 2]:
+        raise ValueError(
+            "comparison_mode must be 0: analytical zonal comparison, 1: numerical zonal comparison, or 2: numerical continuous radial profile (interpolated) comparison"
+            )
+    
     os.makedirs(output_path, exist_ok=True)
 
-    zonal_reference = use_CASEMA_reference or zonal_ref_file_names is not None
+    zonal_reference = comparison_mode in [0, 1]
 
     nRadialZones = 3
     n_settings = 1
     numRef_kwargs = {} # only filled when numerical reference is being used
         
-    if zonal_ref_file_names is None:
+    if ref_file_names is None:
         
         references = [None] * n_settings
         
-    elif use_CASEMA_reference:
-        raise ValueError("If zonal_ref_file_names are provided dynamically, you cannot specify the use of CASEMA references (which are fixed)")
+    elif comparison_mode==0:
+        raise ValueError("for comparison_mode=0, i.e. anlytical zonal comparison, the reference is determined automatically, you cannot provide references by specifying ref_file_names")
     
     else:
         
         references = []
         
         for idx in range(n_settings):
-            # note that we consider radial zone 0
-            references.extend(
-                [convergence.get_solution(
-                    reference_data_path + '/' + zonal_ref_file_names[idx], unit='unit_004', which='outlet'
-                    )]
-                )
+            
+            if comparison_mode==1:
+            # Note: All zones will be considered.
+            # We start with the first and compute the other two in a second step.
+            # Finally, we compute a discrete norm of the zonal errors to compute the EOC.
+                references.extend(
+                    [convergence.get_solution(
+                        reference_data_path + '/' + ref_file_names[idx], unit='unit_' + str(nRadialZones + 1).zfill(3), which='outlet'
+                        )]
+                    )
+            elif comparison_mode==2:
+                
+                references.extend([ref_file_names[idx]])
 
-    if use_CASEMA_reference:
+    if comparison_mode==0:
 
         references = []
-        zonal_ref_file_names = ['CASEMA_reference/ref_2DGRM3Zone_noFilmDiff_1Comp_radZ3.h5',
-                          'CASEMA_reference/ref_2DGRM3Zone_dynLin_1Comp_radZ3.h5',
-                          'CASEMA_reference/ref_2DGRMsd3Zone_dynLin_1Comp_radZ3.h5',
-                          'CASEMA_reference/ref_2DGRM3Zone_reqLin_1Comp_radZ3.h5',
-                          'CASEMA_reference/ref_2DGRMsd3Zone_reqLin_1Comp_radZ3.h5',
-                          'CASEMA_reference/ref_2DGRM2parType3Zone_1Comp_radZ3.h5' if small_test else 'CASEMA_reference/ref_2DGRM4parType3Zone_1Comp_radZ3.h5'
-                          ]
+        ref_file_names = ['CASEMA_reference/ref_2DGRM3Zone_noFilmDiff_1Comp_radZ3.h5']
 
-        # Note: All zones will be considered when use_CASEMA_reference is true.
-        # We start with the first and compute the other two in a second step.
-        # Finally, we compute a discrete norm of the zonal errors to compute the EOC.
         for idx in range(n_settings):
-            # note that we consider radial zone 0
+            # Note: All zones will be considered.
+            # We start with the first and compute the other two in a second step.
+            # Finally, we compute a discrete norm of the zonal errors to compute the EOC.
             references.extend(
                 [convergence.get_solution(
-                    reference_data_path + '/' + zonal_ref_file_names[idx], unit='unit_004', which='outlet'
+                    reference_data_path + '/' + ref_file_names[idx], unit='unit_' + str(nRadialZones + 1).zfill(3), which='outlet'
                 )]
             )
 
@@ -92,7 +97,7 @@ def GRM2D_linBnd_tests(
                 'film_diffusion': 0.0,
                 # 'col_dispersion_radial' : 0.0,
                 # If set to true, solution time 0.0 is ignored since its not computed by the analytical solution (CADET-Semi-Analytic)
-                'analytical_reference': use_CASEMA_reference,
+                'analytical_reference': comparison_mode==0,
                 'nRadialZones': 3,
                 'name': '2DGRM3Zone_noFilmDiff_1Comp',
                 'adsorption_model': 'NONE',
@@ -100,7 +105,7 @@ def GRM2D_linBnd_tests(
                 'reference': references[0]
             },
             {  # 1parType, dynamic binding, no surface diffusion
-                'analytical_reference': use_CASEMA_reference,
+                'analytical_reference': comparison_mode==0,
                 'nRadialZones': 3,
                 'name': '2DGRM3Zone_dynLin_1Comp',
                 'adsorption_model': 'LINEAR',
@@ -109,7 +114,7 @@ def GRM2D_linBnd_tests(
                 'reference': references[min(len(references) - 1, 1)]
             },
             {  # 1parType, dynamic binding, with surface diffusion
-                'analytical_reference': use_CASEMA_reference,
+                'analytical_reference': comparison_mode==0,
                 'nRadialZones': 3,
                 'name': '2DGRMsd3Zone_dynLin_1Comp',
                 'adsorption_model': 'LINEAR',
@@ -118,7 +123,7 @@ def GRM2D_linBnd_tests(
                 'reference': references[min(len(references) - 1, 2)]
             },
             {  # 1parType, req binding, no surface diffusion
-                'analytical_reference': use_CASEMA_reference,
+                'analytical_reference': comparison_mode==0,
                 'nRadialZones': 3,
                 'name': '2DGRM3Zone_reqLin_1Comp',
                 'adsorption_model': 'LINEAR',
@@ -129,7 +134,7 @@ def GRM2D_linBnd_tests(
                 'reference': references[min(len(references) - 1, 3)]
             },
             {  # 1parType, req binding, with surface diffusion
-                'analytical_reference': use_CASEMA_reference,
+                'analytical_reference': comparison_mode==0,
                 'nRadialZones': 3,
                 'name': '2DGRMsd3Zone_reqLin_1Comp',
                 'adsorption_model': 'LINEAR',
@@ -140,7 +145,7 @@ def GRM2D_linBnd_tests(
                 'reference': references[min(len(references) - 1, 4)]
             },
             {  # 4parType:
-                'analytical_reference': use_CASEMA_reference,
+                'analytical_reference': comparison_mode==0,
                 'nRadialZones': 3,
                 'name': '2DGRM2parType3Zone_1Comp' if small_test else '2DGRM4parType3Zone_1Comp',
                 'npartype': 2 if small_test else 4,
@@ -327,7 +332,7 @@ def GRM2D_linBnd_tests(
                 # get the references at the other ports
                 references.extend(
                     [convergence.get_solution(
-                        reference_data_path + '/' + zonal_ref_file_names[idx], unit='unit_' + str(4 + target_zone).zfill(3), which='outlet'
+                        reference_data_path + '/' + ref_file_names[idx], unit='unit_' + str(4 + target_zone).zfill(3), which='outlet'
                     )]
                 )
 
