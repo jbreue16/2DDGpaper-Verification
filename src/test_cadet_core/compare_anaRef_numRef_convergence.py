@@ -49,7 +49,7 @@ output_path = project_repo.output_path / "test_cadet-core"
 with project_repo.track_results(results_commit_message=commit_message, debug=rdm_debug_mode):
 
     rerun_sims = 0
-    small_test = 0 # Defines a smaller test set (less numerical refinement steps)
+    small_test = 1 # Defines a smaller test set (less numerical refinement steps)
     n_jobs = -1 # For parallelization on the number of simulations
     cadet_path = r"C:\Users\jmbr\OneDrive\Desktop\CADET_compiled\master4_crysPartII_d0888cb\aRELEASE\bin\cadet-cli.exe"
     Cadet.cadet_path = cadet_path # convergence.get_cadet_path()
@@ -107,6 +107,9 @@ with project_repo.track_results(results_commit_message=commit_message, debug=rdm
         rerun_sims=rerun_sims
         )
 
+    # convergence.compare_h5_files(
+    #     r"C:\Users\jmbr\software\2DDGpaper-Verification\output\test_cadet-core\numRef_2DLRMP3Zone_noFilmDiff_1Comp_DG_axP3Z4_radP3Z3.h5",
+    #     r"C:\Users\jmbr\software\2DDGpaper-Verification\output\test_cadet-core\radialProfile_2DLRMP3Zone_noFilmDiff_1Comp_DG_axP3Z4_radP3Z3.h5")
 
     if delete_h5_files:
         convergence.delete_h5_files(str(output_path) + "/numRef_2Dchromatography", exclude_files=exclude_files)
