@@ -49,7 +49,7 @@ output_path = project_repo.output_path / "test_cadet-core"
 with project_repo.track_results(results_commit_message=commit_message, debug=rdm_debug_mode):
 
     rerun_sims = 0
-    small_test = 1 # Defines a smaller test set (less numerical refinement steps)
+    small_test = 0 # Defines a smaller test set (less numerical refinement steps)
     n_jobs = -1 # For parallelization on the number of simulations
     cadet_path = r"C:\Users\jmbr\OneDrive\Desktop\CADET_compiled\master4_crysPartII_d0888cb\aRELEASE\bin\cadet-cli.exe"
     Cadet.cadet_path = cadet_path # convergence.get_cadet_path()
@@ -81,22 +81,22 @@ with project_repo.track_results(results_commit_message=commit_message, debug=rdm
     #         rerun_sims=rerun_sims)
 
 
-    twoDimChromatographyDG.LRMP2D_linBnd_tests(
-        polyDeg=3, n_jobs=n_jobs, database_path=None, small_test=small_test,
-        output_path=str(output_path) + "/anaRef_2D_chromatography", cadet_path=cadet_path,
-        reference_data_path=str(project_repo.output_path.parent / 'data'),
-        comparison_mode=0,
-        rerun_sims=rerun_sims
-        )
+    # twoDimChromatographyDG.LRMP2D_linBnd_tests(
+    #     polyDeg=3, n_jobs=n_jobs, database_path=None, small_test=small_test,
+    #     output_path=str(output_path) + "/anaRef_2D_chromatography", cadet_path=cadet_path,
+    #     reference_data_path=str(project_repo.output_path.parent / 'data'),
+    #     comparison_mode=0,
+    #     rerun_sims=rerun_sims
+    #     )
 
 
-    twoDimChromatographyDG.LRMP2D_linBnd_tests(
-        polyDeg=3, n_jobs=n_jobs, database_path=None, small_test=small_test,
-        output_path=str(output_path) + "/numRef_2D_chromatography", cadet_path=cadet_path,
-        reference_data_path=str(project_repo.output_path.parent / 'data'),
-        comparison_mode=1, ref_file_names=[r"2DLRMP3Zone_noFilmDiff_1Comp_DG_axP3Z128_radP3Z96.h5"],
-        rerun_sims=rerun_sims
-        )
+    # twoDimChromatographyDG.LRMP2D_linBnd_tests(
+    #     polyDeg=3, n_jobs=n_jobs, database_path=None, small_test=small_test,
+    #     output_path=str(output_path) + "/numRef_2D_chromatography", cadet_path=cadet_path,
+    #     reference_data_path=str(project_repo.output_path.parent / 'data'),
+    #     comparison_mode=1, ref_file_names=[r"2DLRMP3Zone_noFilmDiff_1Comp_DG_axP3Z128_radP3Z96.h5"],
+    #     rerun_sims=rerun_sims
+    #     )
 
 
     twoDimChromatographyDG.LRMP2D_linBnd_tests(

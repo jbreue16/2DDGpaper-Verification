@@ -14,132 +14,6 @@ import bench_configs
 import settings_2Dchromatography
 
 
-# %% todo: merge this into one function
-
-def LRMP2D_linBnd_radialCompTests(
-        polyDeg,
-        n_jobs, database_path, small_test,
-        output_path, cadet_path,
-        rerun_sims=True):
-
-    _nRadZones=3
-    
-    settings = [
-        { # PURE COLUMN TRANSPORT CASE
-        'film_diffusion' : 0.0,
-        # 'col_dispersion_radial' : 0.0,
-        'analytical_reference' : False, # If set to true, solution time 0.0 is ignored since its not computed by the analytical solution (CADET-Semi-Analytic)
-        'nRadialZones' : _nRadZones,
-        'name' : '2DLRMP3Zone_noBnd_1Comp',
-        'adsorption_model' : 'NONE'
-        }
-        ]
-
-    os.makedirs(output_path, exist_ok=True)
-    
-    # %% Define benchmarks
-    
-    cadet_configs = []
-    config_names = []
-    include_sens = []
-    ref_files = [] # [[ref1], [ref2]]
-    unit_IDs = []
-    which = []
-    idas_abstol = []
-    ax_methods = []
-    ax_discs = []
-    rad_methods = []
-    rad_discs = []
-    par_methods = []
-    par_discs = []
-
-    
-    def LRMP2D_DG_Benchmark(small_test=False, **kwargs):
-
-        nDisc = 5 if small_test else 6
-        nRadialZones=kwargs.get('nRadialZones', _nRadZones)
-        
-        benchmark_config = {
-            'cadet_config_jsons': [
-                settings_2Dchromatography.model2Dflow_linBnd_benchmark1(
-                    transport_model='LUMPED_RATE_MODEL_WITH_PORES_2D',
-                    radNElem=nRadialZones,
-                    rad_inlet_profile=None,
-                    USE_MODIFIED_NEWTON=1, axMethod=3, **kwargs)
-            ],
-            'include_sens': [
-                False
-            ],
-            'ref_files': [
-                [None]
-            ],
-            'unit_IDs': [
-                '000'
-            ],
-            'which': [
-                'radial_outlet' # radial_outlet # outlet_port_000
-            ],
-            'idas_abstol': [
-                [1e-10]
-            ],
-            'ax_methods': [
-                [3]
-            ],
-            'ax_discs': [
-                [bench_func.disc_list(4, nDisc)]
-            ],
-            'rad_methods': [
-                [3]
-            ],
-            'rad_discs': [
-                [bench_func.disc_list(nRadialZones, nDisc)]
-            ],
-            'par_methods': [
-                [None]
-            ],
-            'par_discs': [ # same number of particle cells as radial cells
-                [None] # [bench_func.disc_list(nRadialZones, nDisc)]
-            ]
-        }
-
-        return benchmark_config
-    
-    # %% create benchmark configurations
-    
-    for setting in settings:
-        addition = LRMP2D_DG_Benchmark(small_test=small_test, **setting)
-        
-        bench_configs.add_benchmark(
-            cadet_configs, include_sens, ref_files, unit_IDs, which,
-            idas_abstol,
-            ax_methods, ax_discs, rad_methods=rad_methods, rad_discs=rad_discs,
-            par_methods=par_methods, par_discs=par_discs,
-            addition=addition)
-    
-        config_names.extend([setting['name']])
-    
-    # %% Run convergence analysis
-    
-    Cadet.cadet_path = cadet_path
-    
-    bench_func.run_convergence_analysis(
-        database_path=database_path, output_path=output_path,
-        cadet_path=cadet_path,
-        cadet_configs=cadet_configs,
-        cadet_config_names=config_names,
-        include_sens=include_sens,
-        ref_files=ref_files,
-        unit_IDs=unit_IDs,
-        which=which,
-        ax_methods=ax_methods, ax_discs=ax_discs,
-        rad_methods=rad_methods, rad_discs=rad_discs,
-        par_methods=par_methods, par_discs=par_discs,
-        idas_abstol=idas_abstol,
-        n_jobs=n_jobs,
-        rad_inlet_profile=None,
-        rerun_sims=rerun_sims
-    )
-
 # %% We define multiple settings convering binding modes, surface diffusion and
 # multiple particle types. All settings consider three radial zones.
 # An analytical solution can be provided and the EOC is computed for three
@@ -156,13 +30,6 @@ def LRMP2D_linBnd_tests(
         raise ValueError(
             "comparison_mode must be 0: analytical zonal comparison, 1: numerical zonal comparison, or 2: numerical continuous radial profile (interpolated) comparison"
             )
-    
-    if comparison_mode==2:
-        return LRMP2D_linBnd_radialCompTests(
-                polyDeg,
-                n_jobs, database_path, small_test,
-                output_path, cadet_path,
-                rerun_sims=rerun_sims)
     
     os.makedirs(output_path, exist_ok=True)
 
@@ -186,7 +53,9 @@ def LRMP2D_linBnd_tests(
         for idx in range(n_settings):
             
             if comparison_mode==1:
-                # note that we consider the outlet for radial zone 0
+            # Note: All zones will be considered.
+            # We start with the first and compute the other two in a second step.
+            # Finally, we compute a discrete norm of the zonal errors to compute the EOC.
                 references.extend(
                     [convergence.get_solution(
                         reference_data_path + '/' + ref_file_names[idx], unit='unit_' + str(nRadialZones + 1).zfill(3), which='outlet'
@@ -204,11 +73,10 @@ def LRMP2D_linBnd_tests(
         references = []
         ref_file_names = ['CASEMA_reference/ref_2DGRM3Zone_noFilmDiff_1Comp_radZ3.h5']
 
-        # Note: All zones will be considered when use_CASEMA_reference is true.
-        # We start with the first and compute the other two in a second step.
-        # Finally, we compute a discrete norm of the zonal errors to compute the EOC.
         for idx in range(n_settings):
-            # note that we consider radial zone 0
+            # Note: All zones will be considered.
+            # We start with the first and compute the other two in a second step.
+            # Finally, we compute a discrete norm of the zonal errors to compute the EOC.
             references.extend(
                 [convergence.get_solution(
                     reference_data_path + '/' + ref_file_names[idx], unit='unit_' + str(nRadialZones + 1).zfill(3), which='outlet'
@@ -248,7 +116,7 @@ def LRMP2D_linBnd_tests(
 
     def LRMP2D_DG_Benchmark(small_test=False, polyDeg=3, **kwargs):
 
-        nDisc = 4 if small_test else 6
+        nDisc = 4 if small_test else 5
         nRadialZones = kwargs.get('nRadialZones', 3)
 
         benchmark_config = {
@@ -269,10 +137,10 @@ def LRMP2D_linBnd_tests(
                 '000'
             ],
             'unit_IDs': [
-                str(nRadialZones + 1 + 0).zfill(3)
+                '000' if comparison_mode==2 else str(nRadialZones + 1 + 0).zfill(3)
             ],
             'which': [
-                'outlet'
+                'radial_outlet' if comparison_mode==2 else 'outlet'
             ],
             'idas_abstol': [
                 [1e-10]
