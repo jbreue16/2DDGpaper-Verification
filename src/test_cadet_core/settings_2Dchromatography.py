@@ -208,7 +208,7 @@ def model2Dflow_linBnd_benchmark1(
         save_path="C:/Users/jmbr/JupyterNotebooks/",
         file_name=None,
         export_json_config=False,
-        transport_model='GENERAL_RATE_MODEL_2D',
+        particle_models=["0D"],
         **kwargs
 ):
 
@@ -218,48 +218,54 @@ def model2Dflow_linBnd_benchmark1(
 
     column = Dict()
 
-    column.UNIT_TYPE = transport_model
-    if column.UNIT_TYPE not in ['GENERAL_RATE_MODEL_2D', 'LUMPED_RATE_MODEL_WITH_PORES_2D']:
-        raise Exception(f"Invalid transport_model {transport_model}")
-    
-    par_model = "1D" if column.UNIT_TYPE == 'GENERAL_RATE_MODEL_2D' else "0D"
-    
+    column.UNIT_TYPE = "COLUMN_MODEL_2D"
     nComp = 1
     column.NCOMP = nComp
 
     column.COL_LENGTH = 0.014
     column.COL_RADIUS = 0.0035
     column.CROSS_SECTION_AREA = np.pi * column.COL_RADIUS**2
-    column.PAR_RADIUS = kwargs.get('par_radius', 45E-6)
-
-    column.NPARTYPE = kwargs.get('npartype', 1)
-    # column.PAR_TYPE_VOLFRAC_MULTIPLEX = 0
+    column.NPARTYPE = len(particle_models)
     column.COL_POROSITY = 0.37
-    column.PAR_POROSITY = kwargs.get('par_porosity', 0.75)
     column.PAR_TYPE_VOLFRAC = kwargs.get('par_type_volfrac', 1.0)
 
     column.VELOCITY = 3.45 / (100.0 * 60.0)  # 3.45 cm/min
     column.COL_DISPERSION = 5.75e-8
     column.COL_DISPERSION_RADIAL = kwargs.get('col_dispersion_radial', 5e-8)
-    column.FILM_DIFFUSION = kwargs.get('film_diffusion', 6.9e-6)
-    if par_model == "1D":
-        column.PAR_DIFFUSION = kwargs.get('par_diffusion', 6.07e-11)
-        column.PAR_SURFDIFFUSION = kwargs.get('par_surfdiffusion', 0.0)
+    
+    for parType in range(column.NPARTYPE):
+    
+        groupName = 'particle_type_' + str(parType).zfill(3)
+        
+        column[groupName].FILM_DIFFUSION = kwargs.get('film_diffusion', 6.9e-6)
+        column[groupName].PAR_RADIUS = kwargs.get('par_radius', 45E-6)
+        column[groupName].PAR_POROSITY = kwargs.get('par_porosity', 0.75)
+        
+        if particle_models[parType] == "1D":
+            column[groupName].PARTICLE_TYPE = "GENERAL_RATE_PARTICLE"
+            column[groupName].PAR_DIFFUSION = kwargs.get('par_diffusion', 6.07e-11)
+            column[groupName].PAR_SURFDIFFUSION = kwargs.get('par_surfdiffusion', 0.0)
+        else:
+            column[groupName].PARTICLE_TYPE = "HOMOGENEOUS_PARTICLE"
 
-    # binding parameters
-    column.nbound = kwargs.get('nbound', 1)
-    column.adsorption_model = kwargs.get('adsorption_model', 'LINEAR')
-    if column.NPARTYPE > 1:
-        for parType in range(column.NPARTYPE):
-            groupName = 'adsorption_' + str(parType).zfill(3)
-            column[groupName].is_kinetic = kwargs['adsorption.is_kinetic'][parType]
-            column[groupName].lin_ka = kwargs['adsorption.lin_ka'][parType]
-            column[groupName].lin_kd = kwargs['adsorption.lin_kd'][parType]
+        # binding parameters
+        column[groupName].nbound = 1
+        column[groupName].adsorption_model = 'LINEAR'
+        if 'adsorption' in kwargs:
+            column[groupName].adsorption.is_kinetic = kwargs['adsorption.is_kinetic'][parType]
+            column[groupName].adsorption.lin_ka = kwargs['adsorption.lin_ka'][parType]
+            column[groupName].adsorption.lin_kd = kwargs['adsorption.lin_kd'][parType]
+        else:
+            column[groupName].adsorption.is_kinetic = 0
+            column[groupName].adsorption.lin_ka = 35.5
+            column[groupName].adsorption.lin_kd = 1.0
             
-    else:
-        column.adsorption.is_kinetic = kwargs.get('adsorption.is_kinetic', 0)
-        column.adsorption.lin_ka = kwargs.get('adsorption.lin_ka', 35.5)
-        column.adsorption.lin_kd = kwargs.get('adsorption.lin_kd', 1.0)
+        
+        if axMethod > 0 and particle_models[parType] == "1D":
+            
+            column[groupName].discretization.PAR_DISC_TYPE = ['EQUIDISTANT_PAR']
+            column[groupName].discretization.PAR_POLYDEG = parMethod
+            column[groupName].discretization.PAR_NELEM = parNElem
 
     if 'INIT_C' in kwargs:
 
@@ -288,19 +294,14 @@ def model2Dflow_linBnd_benchmark1(
     column.init_cp = kwargs.get('init_cp', [0] * nComp)
     column.init_q = kwargs.get('init_cs', [0] * nComp)
 
-    column.discretization.NPAR = parNElem
-    column.discretization.PAR_DISC_TYPE = ['EQUIDISTANT_PAR']
     if axMethod > 0:
         column.discretization.SPATIAL_METHOD = "DG"
         column.discretization.AX_POLYDEG = axMethod
         column.discretization.AX_NELEM = axNElem
         column.discretization.RAD_POLYDEG = radMethod
         column.discretization.RAD_NELEM = radNElem
-        if par_model == "1D":
-            column.discretization.PAR_POLYDEG = parMethod
-            column.discretization.PAR_NELEM = parNElem
     else:
-        if par_model == "1D":
+        if particle_models[0] == "1D":
             column.discretization.NPAR = parNElem
             column.discretization.PAR_DISC_TYPE = ['EQUIDISTANT_PAR']
         column.discretization.SPATIAL_METHOD = "FV"
@@ -430,6 +431,8 @@ def model2Dflow_linBnd_benchmark1(
         return {'input': model}
     else:
         cadet_model = Cadet()
+        if 'cadet_path' in kwargs:
+            Cadet.cadet_path = kwargs['cadet_path']
         cadet_model.root.input = model
 
         if column.discretization.SPATIAL_METHOD == "FV":
@@ -471,4 +474,48 @@ def model2Dflow_linBnd_benchmark1(
             plt.ylabel(r'$concentration~/~mol \cdot L^{-1} $')
             plt.show()
 
-        return model
+        return cadet_model
+    
+    
+       
+#%%
+ 
+polyDeg = 3
+
+kwargs = {
+    'cadet_path': r'C:\Users\jmbr\software\CADET-Core\out\install\aRELEASE\bin\cadet-cli.exe',
+    'par_surfdiffusion': 1e-11,
+    'particle_models': ["1D", "0D"],
+    'par_type_volfrac': [0.4, 0.6],
+    'adsorption.is_kinetic': [1, 0], 'adsorption.lin_ka': [35.5], 'adsorption.lin_kd': [1.0, 1.0]
+    }
+
+save_path=r"C:\Users\jmbr\software\Verify-DG2D/"
+file_name = 'ref_COL2D_GRMsd3Zone2ParType_dynLin_1Comp_benchmark1_DG_axP3Z8_radP3Z3_parP3Z1.h5'
+
+model = model2Dflow_linBnd_benchmark1(
+    axMethod=polyDeg, axNElem=8,
+    radMethod=polyDeg, radNElem=3,
+    parMethod=polyDeg, parNElem=1,
+    nRadialZones=3,  # discontinuous radial zones (equidistant)
+    tolerance=1e-10,
+    plot=False, run=1,
+    save_path=save_path,
+    file_name=file_name,
+    export_json_config=False,
+    **kwargs
+    )
+    
+#%%
+
+# save_path=r"C:\Users\jmbr\software\Verify-DG2D/"
+# file_name = 'ref_2DGRMsd3Zone_dynLin_1Comp_benchmark1_DG_axP3Z8_radP3Z3_parP3Z1.h5'
+
+# model.save_as_python_script(filename="jojo.py")
+
+
+
+
+
+
+
