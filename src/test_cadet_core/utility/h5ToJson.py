@@ -117,10 +117,10 @@ def h5_to_json(h5_filename, json_filename, ignore_list):
 # %% random single file
 
 file_names = [
-    "lrmp2d_debug"
+    "ref_2DLRMP3Zone_noFilmDiff_1Comp_benchmark1"
 ]
 json_filenames = [
-    "lrmp2d_debug"
+    "ref_2DLRMP3Zone_noFilmDiff_1Comp_benchmark1"
 ]
 
 
@@ -138,7 +138,7 @@ ignore_list = [
     'output'
 ]
 
-file_path = r"C:\Users\jmbr\JupyterNotebooks/"
+file_path = r"C:\Users\jmbr\software\CADET-Core\test\data/"
 for file_name, json_filename in zip(file_names, json_filenames):
 
     h5_filename = file_path + file_name + ".h5"

@@ -29,9 +29,9 @@ import settings_2Dchromatography
 
 #%% User Input
 
-commit_message = f"Test: Compare FV and DG convergence to analytical and numerical reference"
+commit_message = f"test" #f"Test: Compare FV and DG convergence to analytical and numerical reference"
 
-rdm_debug_mode = 0 # Run CADET-RDM in debug mode to test if the script works
+rdm_debug_mode = 1 # Run CADET-RDM in debug mode to test if the script works
 
 delete_h5_files = 0 # delete h5 files (but keep convergence tables and plots)
 exclude_files = None # ["file1", "file2"] # specify h5 files that should not be deleted
@@ -48,64 +48,87 @@ output_path = project_repo.output_path / "test_cadet-core"
 
 with project_repo.track_results(results_commit_message=commit_message, debug=rdm_debug_mode):
 
-    rerun_sims = 1
+    rerun_sims = 0
     small_test = 0 # Defines a smaller test set (less numerical refinement steps)
     n_jobs = -1 # For parallelization on the number of simulations
     cadet_path = r"C:\Users\jmbr\Desktop\CADET_compiled\master4_crysPartII_d0888cb\aRELEASE\bin\cadet-cli.exe"
     Cadet.cadet_path = cadet_path # convergence.get_cadet_path()
 
 
-    # Comparison of radial zone averages, i.e. outlet units
-    twoDimChromatography.GRM2D_linBnd_tests(
-            n_jobs=n_jobs, database_path=None, small_test=small_test,
-            output_path=str(output_path) + "/anaRef_2D_chromatography", cadet_path=cadet_path,
-            reference_data_path=str(project_repo.output_path.parent / 'data'),
-            comparison_mode=0,
-            rerun_sims=rerun_sims
-            )
+    # # Comparison of radial zone averages, i.e. outlet units
+    # twoDimChromatography.GRM2D_linBnd_tests(
+    #         n_jobs=n_jobs, database_path=None, small_test=small_test,
+    #         output_path=str(output_path) + "/anaRef_2D_chromatography", cadet_path=cadet_path,
+    #         reference_data_path=str(project_repo.output_path.parent / 'data'),
+    #         comparison_mode=0,
+    #         rerun_sims=rerun_sims
+    #         )
 
 
-    # Comparison of radial zone averages, i.e. outlet units
-    twoDimChromatographyDG.LRMP2D_linBnd_tests(
-        polyDeg=3, n_jobs=n_jobs, database_path=None, small_test=small_test,
-        output_path=str(output_path) + "/anaRef_2D_chromatography", cadet_path=cadet_path,
-        reference_data_path=str(project_repo.output_path.parent / 'data'),
-        comparison_mode=0,
-        rerun_sims=rerun_sims
-        )
+    # # Comparison of radial zone averages, i.e. outlet units
+    # twoDimChromatographyDG.LRMP2D_linBnd_tests(
+    #     polyDeg=3, n_jobs=n_jobs, database_path=None, small_test=small_test,
+    #     output_path=str(output_path) + "/anaRef_2D_chromatography", cadet_path=cadet_path,
+    #     reference_data_path=str(project_repo.output_path.parent / 'data'),
+    #     comparison_mode=0,
+    #     rerun_sims=rerun_sims
+    #     )
 
-    if delete_h5_files:
-        convergence.delete_h5_files(str(output_path) + "/anaRef_2Dchromatography", exclude_files=exclude_files)
-
-
-    # Comparison of radial zone averages, i.e. outlet units
-    twoDimChromatography.GRM2D_linBnd_tests(
-            n_jobs=n_jobs, database_path=None, small_test=small_test,
-            output_path=str(output_path) + "/numRefRadZones_2D_chromatography", cadet_path=cadet_path,
-            reference_data_path=str(project_repo.output_path.parent / 'data'),
-            comparison_mode=1, ref_file_names=[r"CADET-Core_reference/2DLRMP3Zone_noFilmDiff_1Comp_DG_axP3Z128_radP3Z96.h5"],
-            rerun_sims=rerun_sims
-            )
+    # if delete_h5_files:
+    #     convergence.delete_h5_files(str(output_path) + "/anaRef_2Dchromatography", exclude_files=exclude_files)
 
 
-    # Comparison of radial zone averages, i.e. outlet units
-    twoDimChromatographyDG.LRMP2D_linBnd_tests(
-        polyDeg=3, n_jobs=n_jobs, database_path=None, small_test=small_test,
-        output_path=str(output_path) + "/numRefRadZones_2D_chromatography", cadet_path=cadet_path,
-        reference_data_path=str(project_repo.output_path.parent / 'data'),
-        comparison_mode=1, ref_file_names=[r"CADET-Core_reference/2DLRMP3Zone_noFilmDiff_1Comp_DG_axP3Z128_radP3Z96.h5"],
-        rerun_sims=rerun_sims
-        )
+    # # Comparison of radial zone averages, i.e. outlet units
+    # twoDimChromatography.GRM2D_linBnd_tests(
+    #         n_jobs=n_jobs, database_path=None, small_test=small_test,
+    #         output_path=str(output_path) + "/numRefRadZones_2D_chromatography", cadet_path=cadet_path,
+    #         reference_data_path=str(project_repo.output_path.parent / 'data'),
+    #         comparison_mode=1, ref_file_names=[r"CADET-Core_reference/2DLRMP3Zone_noFilmDiff_1Comp_DG_axP3Z128_radP3Z96.h5"],
+    #         rerun_sims=rerun_sims
+    #         )
 
 
-    # Comparison of radially interpolated outlet profile
-    twoDimChromatographyDG.LRMP2D_linBnd_tests(
-        polyDeg=3, n_jobs=n_jobs, database_path=None, small_test=small_test,
-        output_path=str(output_path) + "/numRefRadPolynomial_2Dchromatography", cadet_path=cadet_path,
-        reference_data_path=str(project_repo.output_path.parent / 'data'),
-        comparison_mode=2, ref_file_names=[r"CADET-Core_reference/2DLRMP3Zone_noFilmDiff_1Comp_DG_axP3Z128_radP3Z96.h5"],
-        rerun_sims=rerun_sims
-        )
+    # # Comparison of radial zone averages, i.e. outlet units
+    # twoDimChromatographyDG.LRMP2D_linBnd_tests(
+    #     polyDeg=3, n_jobs=n_jobs, database_path=None, small_test=small_test,
+    #     output_path=str(output_path) + "/numRefRadZones_2D_chromatography", cadet_path=cadet_path,
+    #     reference_data_path=str(project_repo.output_path.parent / 'data'),
+    #     comparison_mode=1, ref_file_names=[r"CADET-Core_reference/2DLRMP3Zone_noFilmDiff_1Comp_DG_axP3Z128_radP3Z96.h5"],
+    #     rerun_sims=rerun_sims
+    #     )
+
+
+    # # Comparison of radially interpolated outlet profile
+    # twoDimChromatographyDG.LRMP2D_linBnd_tests(
+    #     polyDeg=3, n_jobs=n_jobs, database_path=None, small_test=small_test,
+    #     output_path=str(output_path) + "/lowTolnumRefRadPolynomial_2Dchromatography", cadet_path=cadet_path,
+    #     reference_data_path=str(project_repo.output_path.parent / 'data'),
+    #     comparison_mode=2,# ref_file_names=[r"CADET-Core_reference/2DLRMP3Zone_noFilmDiff_1Comp_DG_axP3Z128_radP3Z96.h5"],
+    #     rerun_sims=rerun_sims
+    #     )
+
+
+
+    settings_2Dchromatography.model2Dflow_linBnd_benchmark1(
+            axMethod=3, axNElem=8,
+            radMethod=2, radNElem=1,
+            tolerance=1e-12,
+            plot=False, run=1,
+            save_path=str(output_path)+r"/",
+            file_name="2DLRMP3Zone_noFilmDiff_1Comp.h5",
+            export_json_config=False,
+            transport_model='LUMPED_RATE_MODEL_WITH_PORES_2D',
+            **{  # PURE COLUMN TRANSPORT CASE
+                'film_diffusion': 0.0,
+                # 'col_dispersion_radial' : 0.0,
+                'nRadialZones': 1,
+                'name': '2DLRMP3Zone_noFilmDiff_1Comp',
+                'adsorption_model': 'NONE',
+                'par_surfdiffusion': 0.0,
+            }
+    )
+
+
 
     if delete_h5_files:
         convergence.delete_h5_files(str(output_path) + "/numRef_2Dchromatography", exclude_files=exclude_files)

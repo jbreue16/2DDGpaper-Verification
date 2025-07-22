@@ -48,11 +48,11 @@ n_jobs = 1 # For parallelization on the number of simulations
 delete_h5_files = 0 # delete h5 files (but keep convergence tables and plots)
 exclude_files = None # ["file1", "file2"] # specify h5 files that should not be deleted
 
-run_chromatography_tests = 0
+run_chromatography_tests = 1
 run_chromatography_system_tests = 0
 run_crystallization_tests = 0
 run_MCT_tests = 0
-run_2DChromatography_tests = True
+run_2DChromatography_tests = 0
 
 database_path = "https://jugit.fz-juelich.de/IBG-1/ModSim/cadet/cadet-database" + \
     "/-/raw/core_tests/cadet_config/test_cadet-core/"

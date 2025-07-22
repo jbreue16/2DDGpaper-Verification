@@ -140,7 +140,7 @@ def LRMP2D_linBnd_tests(
                 'radial_outlet' if comparison_mode==2 else 'outlet'
             ],
             'idas_abstol': [
-                [1e-10]
+                [1e-12]
             ],
             'ax_methods': [
                 [polyDeg]
